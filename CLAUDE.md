@@ -16,7 +16,9 @@ The shared conventions live in [discord-dev-standards](https://github.com/Lempki
 ## Layout
 
 * `src/scraper_api/main.py` defines the app, the lifespan, and the routes.
-* `src/scraper_api/config.py` reads settings from the environment with pydantic-settings.
+* `src/scraper_api/config.py` adds this service's settings to `ServiceSettings`.
+* `src/scraper_api/service.py` holds `ServiceSettings`, which validates the shared secret, and `service_version()`, which reads the version from pyproject.toml.
+* `src/scraper_api/logging_config.py` turns every log record, including uvicorn's, into one JSON line.
 * `src/scraper_api/auth.py` holds the bearer token dependency that protects every route except `/health`.
 * `src/scraper_api/models.py` holds the request and response models.
 * `src/scraper_api/jobs.py` is the in-memory job store, with a background eviction based on `SCRAPER_JOB_TTL`.
@@ -25,6 +27,8 @@ The shared conventions live in [discord-dev-standards](https://github.com/Lempki
 
 ## Template rules
 
-* `src/scraper_api/auth.py`, `.dockerignore`, `setup.sh`, `setup.bat`, `.pre-commit-config.yaml`, and `.github/dependabot.yml` are core files kept identical to discord-api-template.
+* `src/scraper_api/auth.py`, `src/scraper_api/logging_config.py`, `src/scraper_api/service.py`, `.dockerignore`, `setup.sh`, `setup.bat`, `.pre-commit-config.yaml`, and `.github/dependabot.yml` are core files kept identical to discord-api-template.
 * Check them against the template with `uv run --project ../discord-dev-standards dev-standards template-check --template ../discord-api-template`.
 * Service-specific behavior belongs in files outside that list, such as `main.py`, `config.py`, `jobs.py`, `runner.py`, and the spiders.
+* Keep the version only in pyproject.toml, and keep `SERVICE` in main.py equal to the project name there.
+* `uv run mypy src` must pass in strict mode, because CI runs it.
