@@ -1,27 +1,63 @@
 import os
 
+import pytest
 from fastapi.testclient import TestClient
 
-os.environ.setdefault("DISCORD_API_SECRET", "test-secret")
+SECRET = "test-secret-0123456789"
+os.environ["DISCORD_API_SECRET"] = SECRET
 
-from scraper_api.main import app  # noqa: E402
+from scraper_api.main import VERSION, app  # noqa: E402
+from scraper_api.service import service_version  # noqa: E402
 
 client = TestClient(app)
-AUTH = {"Authorization": "Bearer test-secret"}
+AUTH = {"Authorization": f"Bearer {SECRET}"}
 WRONG = {"Authorization": "Bearer wrong"}
 
 
 def test_health():
     r = client.get("/health")
     assert r.status_code == 200
-    assert r.json()["status"] == "ok"
-    assert r.json()["service"] == "discord-api-scraper"
-    assert "version" in r.json()
+    assert r.json() == {
+        "status": "ok",
+        "service": "discord-api-scraper",
+        "version": VERSION,
+    }
+
+
+def test_version_comes_from_package_metadata() -> None:
+    assert VERSION == service_version("discord-api-scraper") != "0.0.0"
+
+
+@pytest.mark.parametrize(
+    ("method", "path", "body"),
+    [
+        ("POST", "/scrape", {"url": "https://example.com"}),
+        ("POST", "/scrape/batch", {"urls": ["https://example.com"]}),
+        ("GET", "/scrape/nonexistent-id", None),
+    ],
+    ids=["scrape", "batch", "status"],
+)
+@pytest.mark.parametrize(
+    "headers",
+    [
+        {},
+        {"Authorization": "Bearer wrong"},
+        {"Authorization": f"Bearer {SECRET}x"},
+        {"Authorization": f"Basic {SECRET}"},
+    ],
+    ids=["missing", "wrong", "longer", "wrong-scheme"],
+)
+def test_protected_routes_reject_without_valid_token(
+    method: str, path: str, body: dict[str, object] | None, headers: dict[str, str]
+) -> None:
+    response = client.request(method, path, json=body, headers=headers)
+    assert response.status_code == 401
+    assert response.headers["WWW-Authenticate"] == "Bearer"
 
 
 def test_scrape_requires_auth():
     r = client.post("/scrape", json={"url": "https://example.com"})
-    assert r.status_code == 403
+    assert r.status_code == 401
 
 
 def test_scrape_returns_job_id():
@@ -56,7 +92,7 @@ def test_scrape_wrong_auth():
 
 def test_job_status_requires_auth():
     r = client.get("/scrape/nonexistent-id")
-    assert r.status_code == 403
+    assert r.status_code == 401
 
 
 def test_job_status_wrong_auth():
@@ -66,7 +102,7 @@ def test_job_status_wrong_auth():
 
 def test_batch_scrape_requires_auth():
     r = client.post("/scrape/batch", json={"urls": ["https://example.com"]})
-    assert r.status_code == 403
+    assert r.status_code == 401
 
 
 def test_batch_scrape_wrong_auth():
@@ -83,7 +119,7 @@ def test_batch_scrape_empty_urls_rejected():
 
 
 def test_scrape_max_items_too_large_rejected():
-    # max_items le=100; 101 exceeds the limit.
+    # max_items has le=100, so 101 exceeds the limit.
     r = client.post(
         "/scrape",
         json={"url": "https://example.com", "max_items": 101},
@@ -93,7 +129,7 @@ def test_scrape_max_items_too_large_rejected():
 
 
 def test_scrape_max_items_zero_rejected():
-    # max_items ge=1; 0 is below the minimum.
+    # max_items has ge=1, so 0 is below the minimum.
     r = client.post(
         "/scrape",
         json={"url": "https://example.com", "max_items": 0},
