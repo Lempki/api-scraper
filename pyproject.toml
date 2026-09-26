@@ -14,23 +14,16 @@ dependencies = [
     "pydantic-settings>=2.3",
 ]
 
-[project.optional-dependencies]
+[dependency-groups]
 dev = [
     "pytest>=8.3",
     "pytest-asyncio>=0.24",
     "httpx>=0.27",
-    "ruff>=0.6",
     "mypy>=1.11",
 ]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/scraper_api"]
-
-[tool.ruff]
-line-length = 88
-
-[tool.ruff.lint]
-select = ["E", "F", "I", "UP", "B"]
 
 [tool.mypy]
 strict = true
@@ -39,3 +32,6 @@ python_version = "3.12"
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+
+[tool.dev-standards.template]
+package = "scraper_api"
