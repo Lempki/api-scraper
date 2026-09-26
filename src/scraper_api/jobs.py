@@ -1,6 +1,6 @@
 import threading
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from .models import JobStatus
@@ -28,14 +28,16 @@ def create(job_id: str, url: str) -> None:
         }
 
 
-def update(job_id: str, *, status: str, items: list | None = None, error: str | None = None) -> None:
+def update(
+    job_id: str, *, status: str, items: list | None = None, error: str | None = None
+) -> None:
     with _lock:
         if job_id not in _jobs:
             return
         _jobs[job_id]["status"] = status
         if items is not None:
             _jobs[job_id]["items"] = items
-            _jobs[job_id]["scraped_at"] = datetime.now(timezone.utc).isoformat()
+            _jobs[job_id]["scraped_at"] = datetime.now(UTC).isoformat()
         if error is not None:
             _jobs[job_id]["error"] = error
 

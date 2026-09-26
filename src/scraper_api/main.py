@@ -19,10 +19,15 @@ def _configure_logging(level: str) -> None:
             "version": 1,
             "formatters": {
                 "json": {
-                    "format": '{"time":"%(asctime)s","level":"%(levelname)s","name":"%(name)s","message":"%(message)s"}'
+                    "format": (
+                        '{"time":"%(asctime)s","level":"%(levelname)s",'
+                        '"name":"%(name)s","message":"%(message)s"}'
+                    )
                 }
             },
-            "handlers": {"console": {"class": "logging.StreamHandler", "formatter": "json"}},
+            "handlers": {
+                "console": {"class": "logging.StreamHandler", "formatter": "json"}
+            },
             "root": {"level": level, "handlers": ["console"]},
         }
     )
@@ -70,7 +75,11 @@ async def scrape(
     return result
 
 
-@app.post("/scrape/batch", response_model=list[JobStatus], dependencies=[Depends(require_auth)])
+@app.post(
+    "/scrape/batch",
+    response_model=list[JobStatus],
+    dependencies=[Depends(require_auth)],
+)
 async def scrape_batch(
     body: BatchScrapeRequest,
     background_tasks: BackgroundTasks,
@@ -97,9 +106,13 @@ async def scrape_batch(
     return results
 
 
-@app.get("/scrape/{job_id}", response_model=JobStatus, dependencies=[Depends(require_auth)])
+@app.get(
+    "/scrape/{job_id}", response_model=JobStatus, dependencies=[Depends(require_auth)]
+)
 async def scrape_status(job_id: str) -> JobStatus:
     job = jobs.get(job_id)
     if job is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found.")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Job not found."
+        )
     return job

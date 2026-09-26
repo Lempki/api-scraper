@@ -1,5 +1,6 @@
 import json
-from typing import Any, Generator
+from collections.abc import Generator
+from typing import Any
 
 import scrapy
 from scrapy.http import Response
@@ -22,7 +23,9 @@ class GenericSpider(scrapy.Spider):
         self._selector_type = selector_type
         self._follow_links = follow_links.lower() == "true"
 
-    def parse(self, response: Response) -> Generator[dict[str, Any] | scrapy.Request, None, None]:
+    def parse(
+        self, response: Response
+    ) -> Generator[dict[str, Any] | scrapy.Request, None, None]:
         item: dict[str, Any] = {}
         for field, selector in self._selectors.items():
             if self._selector_type == "xpath":
