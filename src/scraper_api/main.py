@@ -1,6 +1,7 @@
-import logging
-import logging.config
+"""The FastAPI application, its lifespan, and its routes."""
+
 import uuid
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from typing import Annotated
 
@@ -9,44 +10,34 @@ from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, status
 from . import jobs
 from .auth import require_auth
 from .config import Settings, get_settings
+from .logging_config import configure_logging
 from .models import BatchScrapeRequest, HealthResponse, JobStatus, ScrapeRequest
 from .runner import run_scrape
+from .service import service_version
 
+# The service name is also the project name in pyproject.toml, which the version is read from.
+SERVICE = "discord-api-scraper"
+VERSION = service_version(SERVICE)
 
-def _configure_logging(level: str) -> None:
-    logging.config.dictConfig(
-        {
-            "version": 1,
-            "formatters": {
-                "json": {
-                    "format": (
-                        '{"time":"%(asctime)s","level":"%(levelname)s",'
-                        '"name":"%(name)s","message":"%(message)s"}'
-                    )
-                }
-            },
-            "handlers": {
-                "console": {"class": "logging.StreamHandler", "formatter": "json"}
-            },
-            "root": {"level": level, "handlers": ["console"]},
-        }
-    )
+# Logging is set up on import, before uvicorn prints its startup lines, so every line is JSON.
+configure_logging(get_settings().log_level)
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    """Configures the job store before the first request."""
     settings = get_settings()
-    _configure_logging(settings.log_level)
     jobs.configure(settings.scraper_job_ttl)
     yield
 
 
-app = FastAPI(title="discord-api-scraper", version="1.0.0", lifespan=lifespan)
+app = FastAPI(title=SERVICE, version=VERSION, lifespan=lifespan)
 
 
 @app.get("/health", response_model=HealthResponse)
 async def health() -> HealthResponse:
-    return HealthResponse(status="ok", service="discord-api-scraper", version="1.0.0")
+    """Reports that the service is up. It needs no token, so monitors and Docker can call it."""
+    return HealthResponse(status="ok", service=SERVICE, version=VERSION)
 
 
 @app.post("/scrape", response_model=JobStatus, dependencies=[Depends(require_auth)])
