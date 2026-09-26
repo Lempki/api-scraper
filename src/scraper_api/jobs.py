@@ -29,7 +29,11 @@ def create(job_id: str, url: str) -> None:
 
 
 def update(
-    job_id: str, *, status: str, items: list | None = None, error: str | None = None
+    job_id: str,
+    *,
+    status: str,
+    items: list[dict[str, Any]] | None = None,
+    error: str | None = None,
 ) -> None:
     with _lock:
         if job_id not in _jobs:
