@@ -26,15 +26,33 @@ A request without the header or with a wrong token gets `401 Unauthorized` with 
   "selector_type": "css",
   "follow_links": false,
   "max_items": 20,
-  "encoding_hint": "utf-8"
+  "encoding_hint": null
 }
 ```
 
-`selector_type` accepts `"css"` or `"xpath"`. The response includes a `job_id` and an initial `status` of `"pending"` or `"running"`. Poll `GET /scrape/{job_id}` until the status is `"complete"` or `"failed"`.
+`selector_type` accepts `"css"` or `"xpath"`. The response includes a `job_id` and an initial `status` of `"pending"`. Poll `GET /scrape/{job_id}` until the status is `"complete"` or `"failed"`.
+A job stays `"pending"` until one of the `SCRAPER_MAX_CONCURRENT_JOBS` slots is free, and then becomes `"running"`.
+
+The `url` must use `http` or `https` and point to a public address.
+The service resolves the host name and answers `422 Unprocessable Content` when any address is private, loopback, link-local, multicast, or otherwise not globally routable.
+That keeps callers away from internal targets such as `127.0.0.1`, the cloud metadata endpoint at `169.254.169.254`, and other containers on the Docker network.
+The same check runs inside the crawl on every redirect and every followed link, and a refused request is dropped.
+
+With `follow_links` set to `true`, the spider follows the links on the start page one level deep.
+It stays on the start URL's host and its subdomains.
+
+`encoding_hint` is optional and defaults to `null`, which lets Scrapy detect each page's encoding.
+When it is set, it forces how every page is decoded, which helps with pages that declare the wrong charset.
+An encoding name that Python does not know gets `422`.
+The results are always UTF-8 JSON.
+
+When the job store is full of unfinished jobs, the request gets `503 Service Unavailable`.
 
 ### POST /scrape/batch
 
 Accepts the same fields as `/scrape` except `url` is replaced with `urls`, a list of up to 20 URLs. The `follow_links` field is not supported for batch jobs. Each URL is always scraped shallowly and gets its own job as well as its own `job_id` in the response array.
+Every URL gets the same address check as in `/scrape`.
+If any URL is refused, the whole request gets `422` naming that URL, and no job starts.
 
 ### GET /scrape/{job_id}
 
@@ -53,7 +71,12 @@ Returns the job status and, once complete, the scraped items.
 }
 ```
 
-Completed jobs are kept in memory for one hour by default, then evicted.
+A failed job's `error` holds the last line of the crawl's error output, cut to 300 characters.
+The full error output goes to the service log at the `WARNING` level.
+
+Finished jobs, whether complete or failed, are kept in memory for one hour after they finish by default, then evicted.
+Pending and running jobs are never evicted, so a slow scrape keeps its result.
+The store holds at most `SCRAPER_MAX_STORED_JOBS` jobs and makes room by evicting the jobs that finished longest ago.
 
 ## Prerequisites
 
@@ -111,15 +134,26 @@ All configuration is read from environment variables or from a `.env` file in th
 |---|---|---|---|
 | `DISCORD_API_SECRET` | Yes | None | Shared bearer token of at least 16 characters. All Discord bots must send this value in the `Authorization` header. The service refuses to start with a placeholder or a shorter secret. Generate one with `python -c "import secrets; print(secrets.token_urlsafe(32))"`. |
 | `LOG_LEVEL` | No | `INFO` | Log verbosity. Accepts `DEBUG`, `INFO`, `WARNING`, `ERROR`, or `CRITICAL`. Every log line, including uvicorn's access log, is one JSON object. |
-| `SCRAPER_MAX_ITEMS` | No | `100` | Upper limit on items returned per job regardless of what the request specifies. |
-| `SCRAPER_JOB_TTL` | No | `3600` | How long completed job results are kept in memory before being evicted, in seconds. |
-| `SCRAPER_USER_AGENT` | No | `discord-api-scraper/1.0` | The User-Agent string sent with all scrape requests. |
+| `SCRAPER_MAX_ITEMS` | No | `100` | Upper limit on items returned per job regardless of what the request specifies. Must be between 1 and 100. |
+| `SCRAPER_JOB_TTL` | No | `3600` | How long a finished job's results are kept in memory after it finishes, in seconds. Must be greater than 0. |
+| `SCRAPER_USER_AGENT` | No | `discord-api-scraper/1.0` | The User-Agent string sent with all scrape requests. Must not be empty. |
+| `SCRAPER_MAX_CONCURRENT_JOBS` | No | `4` | How many scrapes run at once. Other jobs wait as `pending`. Must be at least 1. |
+| `SCRAPER_JOB_TIMEOUT` | No | `60` | How long one scrape may run before its subprocess is killed, in seconds. Must be greater than 0. |
+| `SCRAPER_MAX_STORED_JOBS` | No | `1000` | How many jobs the in-memory store holds. When only unfinished jobs are left, new jobs get `503`. Must be at least 1. |
+| `SCRAPER_ALLOW_PRIVATE_TARGETS` | No | `false` | Turns off the public address check so that local test pages can be scraped. The `http` or `https` scheme is still required. It must stay off in production. |
+
+The service refuses to start when a `SCRAPER_*` value is out of range.
 
 ## Notes on site compatibility
 
 Scrapy respects `robots.txt` by default. Sites that block scrapers via `robots.txt` will not be crawled. The `SCRAPER_USER_AGENT` variable can be used to identify requests from your deployment.
 
-Each scrape job runs Scrapy in a separate subprocess. This isolates the Twisted reactor that Scrapy uses internally from the FastAPI event loop. Jobs time out after 60 seconds.
+Each scrape job runs Scrapy in a separate subprocess. This isolates the Twisted reactor that Scrapy uses internally from the FastAPI event loop.
+The subprocess is `python -m scraper_api.spiders.run`, and it reads the job as one JSON object on stdin.
+A job that runs longer than `SCRAPER_JOB_TIMEOUT` seconds is killed and marked failed.
+
+The address check does not cover DNS rebinding.
+A host name can resolve to a public address during the check and to a private one when Scrapy connects.
 
 ## Project structure
 
@@ -132,10 +166,13 @@ discord-api-scraper/
 │   ├── logging_config.py       # JSON logging for every logger, including uvicorn's.
 │   ├── auth.py                 # Bearer token dependency.
 │   ├── models.py               # Pydantic request and response models.
-│   ├── jobs.py                 # In-memory job store with TTL eviction.
-│   ├── runner.py               # Scrapy subprocess launcher.
+│   ├── jobs.py                 # Bounded in-memory job store with TTL eviction.
+│   ├── netguard.py             # Check that refuses non-public scrape targets.
+│   ├── runner.py               # Scrapy subprocess launcher with a timeout and a concurrency limit.
 │   └── spiders/
-│       └── generic_spider.py   # Reusable Scrapy spider driven by selector config.
+│       ├── generic_spider.py   # Reusable Scrapy spider driven by selector config.
+│       ├── guard.py            # Downloader middleware that checks every request's target.
+│       └── run.py              # Subprocess entry point that runs one crawl.
 ├── tests/
 ├── Dockerfile
 ├── docker-compose.yml

@@ -15,14 +15,17 @@ The shared conventions live in [discord-dev-standards](https://github.com/Lempki
 
 ## Layout
 
-* `src/scraper_api/main.py` defines the app, the lifespan, and the routes.
+* `src/scraper_api/main.py` defines the app and the routes. It checks every requested URL before it creates a job.
 * `src/scraper_api/config.py` adds this service's settings to `ServiceSettings`.
 * `src/scraper_api/service.py` holds `ServiceSettings`, which validates the shared secret, and `service_version()`, which reads the version from pyproject.toml.
 * `src/scraper_api/logging_config.py` turns every log record, including uvicorn's, into one JSON line.
 * `src/scraper_api/auth.py` holds the bearer token dependency that protects every route except `/health`.
 * `src/scraper_api/models.py` holds the request and response models.
-* `src/scraper_api/jobs.py` is the in-memory job store, with a background eviction based on `SCRAPER_JOB_TTL`.
-* `src/scraper_api/runner.py` builds and launches the Scrapy subprocess for a job and parses its output.
+* `src/scraper_api/netguard.py` refuses URLs that are not `http` or `https` or that resolve to a non-public address.
+* `src/scraper_api/jobs.py` is the bounded in-memory job store. It evicts finished jobs once they finished more than `SCRAPER_JOB_TTL` seconds ago and never evicts unfinished ones.
+* `src/scraper_api/runner.py` runs each job's crawl subprocess under a semaphore and a timeout, and validates its output.
+* `src/scraper_api/spiders/run.py` is the subprocess entry point, `python -m scraper_api.spiders.run`, which reads one `CrawlConfig` as JSON on stdin.
+* `src/scraper_api/spiders/guard.py` is the downloader middleware that applies the address check to redirects and followed links.
 * `src/scraper_api/spiders/generic_spider.py` is the Scrapy spider driven by the selectors in each request.
 
 ## Template rules
@@ -32,3 +35,5 @@ The shared conventions live in [discord-dev-standards](https://github.com/Lempki
 * Service-specific behavior belongs in files outside that list, such as `main.py`, `config.py`, `jobs.py`, `runner.py`, and the spiders.
 * Keep the version only in pyproject.toml, and keep `SERVICE` in main.py equal to the project name there.
 * `uv run mypy src` must pass in strict mode, because CI runs it.
+* `SCRAPER_ALLOW_PRIVATE_TARGETS` exists for local testing only and must stay off in production.
+* Tests never touch the network. The `fake_dns` fixture in `tests/conftest.py` replaces DNS, and the end-to-end tests scrape a local server with private targets allowed.
