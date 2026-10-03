@@ -7,10 +7,10 @@ SECRET = "test-secret-0123456789"
 
 
 def test_defaults() -> None:
-    settings = Settings(discord_api_secret=SECRET)
+    settings = Settings(api_secret=SECRET)
     assert settings.scraper_max_items == 100
     assert settings.scraper_job_ttl == 3600
-    assert settings.scraper_user_agent == "discord-api-scraper/1.0"
+    assert settings.scraper_user_agent == "api-scraper/1.0"
     assert settings.scraper_max_concurrent_jobs == 4
     assert settings.scraper_job_timeout == 60
     assert settings.scraper_max_stored_jobs == 1000
@@ -40,7 +40,7 @@ def test_invalid_scraper_settings_are_refused(
 ) -> None:
     monkeypatch.setenv(variable, value)
     with pytest.raises(ValidationError, match=variable.lower()):
-        Settings(discord_api_secret=SECRET)
+        Settings(api_secret=SECRET)
 
 
 @pytest.mark.parametrize(
@@ -69,4 +69,4 @@ def test_valid_scraper_settings_are_read_from_the_environment(
     expected: object,
 ) -> None:
     monkeypatch.setenv(variable, value)
-    assert getattr(Settings(discord_api_secret=SECRET), field) == expected
+    assert getattr(Settings(api_secret=SECRET), field) == expected

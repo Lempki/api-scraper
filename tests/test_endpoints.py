@@ -8,7 +8,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 SECRET = "test-secret-0123456789"
-os.environ["DISCORD_API_SECRET"] = SECRET
+os.environ["API_SECRET"] = SECRET
 
 from scraper_api.config import Settings, get_settings  # noqa: E402
 from scraper_api.jobs import JobStore, get_job_store  # noqa: E402
@@ -55,7 +55,7 @@ def _runner() -> RecordingRunner:
 
 
 def _use_settings(**values: Any) -> None:
-    settings = Settings(discord_api_secret=SECRET, **values)
+    settings = Settings(api_secret=SECRET, **values)
     app.dependency_overrides[get_settings] = lambda: settings
 
 
@@ -64,13 +64,13 @@ def test_health() -> None:
     assert r.status_code == 200
     assert r.json() == {
         "status": "ok",
-        "service": "discord-api-scraper",
+        "service": "api-scraper",
         "version": VERSION,
     }
 
 
 def test_version_comes_from_package_metadata() -> None:
-    assert VERSION == service_version("discord-api-scraper") != "0.0.0"
+    assert VERSION == service_version("api-scraper") != "0.0.0"
 
 
 @pytest.mark.parametrize(

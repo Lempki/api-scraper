@@ -1,6 +1,6 @@
-# discord-api-scraper
+# api-scraper
 
-This is a REST API that performs web scraping on behalf of Discord bots. It accepts a URL and a set of CSS or XPath selectors, runs a [Scrapy](https://scrapy.org/) spider in an isolated subprocess, and returns structured data as JSON. Bots call this API to retrieve content from external websites such as news feeds, game scores, or any other structured page without bundling a scraping stack locally. This project is based on the [discord-api-template](https://github.com/Lempki/discord-api-template) repository, which provides the core architecture.
+This is a REST API that performs web scraping on behalf of bots and other clients. It accepts a URL and a set of CSS or XPath selectors, runs a [Scrapy](https://scrapy.org/) spider in an isolated subprocess, and returns structured data as JSON. Clients call this API to retrieve content from external websites such as news feeds, game scores, or any other structured page without bundling a scraping stack locally. This project is based on the [api-template](https://github.com/Lempki/api-template) repository, which provides the core architecture.
 
 ## Endpoints
 
@@ -107,14 +107,14 @@ chmod +x setup.sh
 ./setup.sh
 ```
 
-The script runs `uv sync`, which creates the `.venv` virtual environment if needed and installs the package with its locked dependencies. It copies `.env.template` to `.env` on the first run. You must edit `.env` and set `DISCORD_API_SECRET` before starting the API.
+The script runs `uv sync`, which creates the `.venv` virtual environment if needed and installs the package with its locked dependencies. It copies `.env.template` to `.env` on the first run. You must edit `.env` and set `API_SECRET` before starting the API.
 
 If you prefer to perform the setup manually, follow these steps:
 
 ```bash
 uv sync
 cp .env.template .env
-# Edit .env and set DISCORD_API_SECRET and other values as needed.
+# Edit .env and set API_SECRET and other values as needed.
 uv run uvicorn scraper_api.main:app --port 8003 --reload
 ```
 
@@ -122,7 +122,7 @@ uv run uvicorn scraper_api.main:app --port 8003 --reload
 
 Alternatively, you can run the API as a Docker container.
 
-1. Copy `.env.template` to `.env` and set `DISCORD_API_SECRET`.
+1. Copy `.env.template` to `.env` and set `API_SECRET`.
 2. Build and start the container:
 
    ```
@@ -139,11 +139,11 @@ All configuration is read from environment variables or from a `.env` file in th
 
 | Variable | Required | Default | Description |
 |---|---|---|---|
-| `DISCORD_API_SECRET` | Yes | None | Shared bearer token of at least 16 characters. All Discord bots must send this value in the `Authorization` header. The service refuses to start with a placeholder or a shorter secret. Generate one with `python -c "import secrets; print(secrets.token_urlsafe(32))"`. |
+| `API_SECRET` | Yes | None | Shared bearer token of at least 16 characters. Every client must send this value in the `Authorization` header. The service refuses to start with a placeholder or a shorter secret. Generate one with `python -c "import secrets; print(secrets.token_urlsafe(32))"`. |
 | `LOG_LEVEL` | No | `INFO` | Log verbosity. Accepts `DEBUG`, `INFO`, `WARNING`, `ERROR`, or `CRITICAL`. Every log line, including uvicorn's access log, is one JSON object. |
 | `SCRAPER_MAX_ITEMS` | No | `100` | Upper limit on items returned per job regardless of what the request specifies. Must be between 1 and 100. |
 | `SCRAPER_JOB_TTL` | No | `3600` | How long a finished job's results are kept in memory after it finishes, in seconds. Must be greater than 0. |
-| `SCRAPER_USER_AGENT` | No | `discord-api-scraper/1.0` | The User-Agent string sent with all scrape requests. Must not be empty. |
+| `SCRAPER_USER_AGENT` | No | `api-scraper/1.0` | The User-Agent string sent with all scrape requests. Must not be empty. |
 | `SCRAPER_MAX_CONCURRENT_JOBS` | No | `4` | How many scrapes run at once. Other jobs wait as `pending`. Must be at least 1. |
 | `SCRAPER_JOB_TIMEOUT` | No | `60` | How long one scrape may run before its subprocess is killed, in seconds. Must be greater than 0. |
 | `SCRAPER_MAX_STORED_JOBS` | No | `1000` | How many jobs the in-memory store holds. When only unfinished jobs are left, new jobs get `503`. Must be at least 1. |
@@ -165,7 +165,7 @@ A host name can resolve to a public address during the check and to a private on
 ## Project structure
 
 ```
-discord-api-scraper/
+api-scraper/
 ├── src/scraper_api/
 │   ├── main.py                 # FastAPI application and route definitions.
 │   ├── config.py               # This service's settings on top of ServiceSettings.

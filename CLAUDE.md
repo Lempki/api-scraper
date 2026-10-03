@@ -1,8 +1,8 @@
-# discord-api-scraper
+# api-scraper
 
-A FastAPI service that runs web scraping jobs on behalf of Discord bots.
+A FastAPI service that runs web scraping jobs on behalf of bots and other clients.
 Each job runs a Scrapy crawl in an isolated subprocess and keeps its results in memory until the configured TTL evicts them.
-This service was created from [discord-api-template](https://github.com/Lempki/discord-api-template).
+This service was created from [api-template](https://github.com/Lempki/api-template).
 The shared conventions live in [discord-dev-standards](https://github.com/Lempki/discord-dev-standards), and its README is the rulebook for code, prose, and commits.
 
 ## Commands
@@ -30,8 +30,8 @@ The shared conventions live in [discord-dev-standards](https://github.com/Lempki
 
 ## Template rules
 
-* `src/scraper_api/auth.py`, `src/scraper_api/logging_config.py`, `src/scraper_api/service.py`, `.dockerignore`, `setup.sh`, `setup.bat`, `.pre-commit-config.yaml`, `.github/dependabot.yml`, and `tests/test_shared.py` are core files kept identical to discord-api-template.
-* Check them against the template with `uv run --project ../discord-dev-standards dev-standards template-check --template ../discord-api-template`.
+* `src/scraper_api/auth.py`, `src/scraper_api/logging_config.py`, `src/scraper_api/service.py`, `.dockerignore`, `setup.sh`, `setup.bat`, `.pre-commit-config.yaml`, `.github/dependabot.yml`, and `tests/test_shared.py` are core files kept identical to api-template.
+* Check them against the template with `uv run --project ../discord-dev-standards dev-standards template-check --template ../api-template`.
 * Service-specific behavior belongs in files outside that list, such as `main.py`, `config.py`, `jobs.py`, `runner.py`, and the spiders.
 * Keep the version only in pyproject.toml, and keep `SERVICE` in main.py equal to the project name there.
 * `uv run mypy src` must pass in strict mode, because CI runs it.

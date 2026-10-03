@@ -34,7 +34,7 @@ class Settings(ServiceSettings):
         StringConstraints(
             strip_whitespace=True, min_length=1, pattern=r"^[^\x00-\x1f\x7f]+$"
         ),
-    ] = "discord-api-scraper/1.0"
+    ] = "api-scraper/1.0"
     scraper_max_concurrent_jobs: int = Field(default=4, ge=1)
     scraper_job_timeout: float = Field(default=60, gt=0)
     scraper_max_stored_jobs: int = Field(default=1000, ge=1)
