@@ -11,7 +11,7 @@ The shared conventions live in [discord-dev-standards](https://github.com/Lempki
 * `uv run uvicorn scraper_api.main:app --port 8003 --reload` starts the API on port 8003. It reads its settings from `.env`.
 * `uv run pytest` runs the tests.
 * `uvx pre-commit run --all-files` runs every lint and format hook.
-* `docker-compose up --build` builds and runs the service, exposing it on host port 8003.
+* `docker compose up --build` builds and runs the service, exposing it on host port 8003.
 
 ## Layout
 
@@ -30,7 +30,7 @@ The shared conventions live in [discord-dev-standards](https://github.com/Lempki
 
 ## Template rules
 
-* `src/scraper_api/auth.py`, `src/scraper_api/logging_config.py`, `src/scraper_api/service.py`, `.dockerignore`, `setup.sh`, `setup.bat`, `.pre-commit-config.yaml`, and `.github/dependabot.yml` are core files kept identical to discord-api-template.
+* `src/scraper_api/auth.py`, `src/scraper_api/logging_config.py`, `src/scraper_api/service.py`, `.dockerignore`, `setup.sh`, `setup.bat`, `.pre-commit-config.yaml`, `.github/dependabot.yml`, and `tests/test_shared.py` are core files kept identical to discord-api-template.
 * Check them against the template with `uv run --project ../discord-dev-standards dev-standards template-check --template ../discord-api-template`.
 * Service-specific behavior belongs in files outside that list, such as `main.py`, `config.py`, `jobs.py`, `runner.py`, and the spiders.
 * Keep the version only in pyproject.toml, and keep `SERVICE` in main.py equal to the project name there.

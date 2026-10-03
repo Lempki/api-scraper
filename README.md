@@ -63,13 +63,19 @@ Returns the job status and, once complete, the scraped items.
   "job_id": "...",
   "status": "complete",
   "url": "https://www.scrapethissite.com/pages/simple/",
-  "scraped_at": "2026-04-18T14:30:00",
+  "scraped_at": "2026-04-18T14:30:00.123456Z",
   "item_count": 12,
   "items": [
     { "name": ["Andorra"], "capital": ["Andorra la Vella"] }
-  ]
+  ],
+  "error": null
 }
 ```
+
+`scraped_at` is the UTC time when the job completed, and it stays `null` until then.
+Each scraped page yields one item, which maps every selector name to the list of all its matches on that page.
+A request without selectors therefore returns no items.
+An unknown job ID, or one whose job was already evicted, gets `404 Not Found`.
 
 A failed job's `error` holds the last line of the crawl's error output, cut to 300 characters.
 The full error output goes to the service log at the `WARNING` level.
@@ -120,11 +126,12 @@ Alternatively, you can run the API as a Docker container.
 2. Build and start the container:
 
    ```
-   docker-compose up --build
+   docker compose up --build
    ```
 
 Docker Compose publishes the API on host port `8003`.
 The image has a health check that calls `/health`, so `docker ps` shows whether the service answers.
+The service keeps no state on disk and needs no volume. Jobs and their results live only in memory, so a restart loses them.
 
 ## Configuration
 
@@ -146,7 +153,7 @@ The service refuses to start when a `SCRAPER_*` value is out of range.
 
 ## Notes on site compatibility
 
-Scrapy respects `robots.txt` by default. Sites that block scrapers via `robots.txt` will not be crawled. The `SCRAPER_USER_AGENT` variable can be used to identify requests from your deployment.
+Every crawl obeys `robots.txt`, because the service turns on Scrapy's `ROBOTSTXT_OBEY` setting. Sites that block scrapers through `robots.txt` are not crawled. The `SCRAPER_USER_AGENT` variable can be used to identify requests from your deployment.
 
 Each scrape job runs Scrapy in a separate subprocess. This isolates the Twisted reactor that Scrapy uses internally from the FastAPI event loop.
 The subprocess is `python -m scraper_api.spiders.run`, and it reads the job as one JSON object on stdin.
