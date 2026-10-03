@@ -26,6 +26,8 @@ def test_defaults() -> None:
         ("SCRAPER_JOB_TTL", "-5"),
         ("SCRAPER_USER_AGENT", ""),
         ("SCRAPER_USER_AGENT", "   "),
+        ("SCRAPER_USER_AGENT", "bot/1\r\nX-Injected: yes"),
+        ("SCRAPER_USER_AGENT", "bot/1\tx"),
         ("SCRAPER_MAX_CONCURRENT_JOBS", "0"),
         ("SCRAPER_JOB_TIMEOUT", "0"),
         ("SCRAPER_JOB_TIMEOUT", "-1.5"),

@@ -28,8 +28,12 @@ class Settings(ServiceSettings):
 
     scraper_max_items: int = Field(default=100, ge=1, le=100)
     scraper_job_ttl: int = Field(default=3600, gt=0)
+    # Control characters are refused, because a line break would add headers to every request.
     scraper_user_agent: Annotated[
-        str, StringConstraints(strip_whitespace=True, min_length=1)
+        str,
+        StringConstraints(
+            strip_whitespace=True, min_length=1, pattern=r"^[^\x00-\x1f\x7f]+$"
+        ),
     ] = "discord-api-scraper/1.0"
     scraper_max_concurrent_jobs: int = Field(default=4, ge=1)
     scraper_job_timeout: float = Field(default=60, gt=0)
