@@ -67,6 +67,19 @@ def test_subprocess_reads_the_config_from_stdin(store: JobStore) -> None:
     assert not Path(config["output_path"]).exists()
 
 
+def test_items_beyond_max_items_are_dropped(store: JobStore) -> None:
+    # Scrapy can overshoot its item limit, so the fake crawl writes 15 items for a limit of 10.
+    code = (
+        "import json, sys; c = json.load(sys.stdin); "
+        "open(c['output_path'], 'w', encoding='utf-8')"
+        ".write(json.dumps([{'n': i} for i in range(15)]))"
+    )
+    runner = ScrapeRunner(max_concurrent_jobs=1, timeout=30, command=_python(code))
+    job = store.get(_run(runner, store, _options()))
+    assert job is not None
+    assert [item["n"] for item in job.items] == list(range(10))
+
+
 @pytest.mark.parametrize(
     "output", ['{"not": "a list"}', "[1, 2]", "not json", '[{"a": 1}'], ids=repr
 )

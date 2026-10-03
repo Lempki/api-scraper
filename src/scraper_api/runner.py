@@ -133,7 +133,7 @@ class ScrapeRunner:
             options: What to crawl.
 
         Returns:
-            The scraped items.
+            The scraped items, at most options.max_items of them.
 
         Raises:
             ScrapeError: If the crawl times out, fails, or writes malformed output.
@@ -143,7 +143,9 @@ class ScrapeRunner:
         try:
             config = CrawlConfig(**options.model_dump(), output_path=str(out_path))
             await self._run_process(job_id, config.model_dump_json().encode())
-            return self._read_items(job_id, out_path)
+            # Scrapy's item limit is approximate, because requests already in flight still finish.
+            # The cut here makes max_items exact.
+            return self._read_items(job_id, out_path)[: options.max_items]
         finally:
             out_path.unlink(missing_ok=True)
 
