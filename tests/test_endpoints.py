@@ -59,7 +59,7 @@ def _use_settings(**values: Any) -> None:
     app.dependency_overrides[get_settings] = lambda: settings
 
 
-def test_health():
+def test_health() -> None:
     r = client.get("/health")
     assert r.status_code == 200
     assert r.json() == {
@@ -100,12 +100,12 @@ def test_protected_routes_reject_without_valid_token(
     assert response.headers["WWW-Authenticate"] == "Bearer"
 
 
-def test_scrape_requires_auth():
+def test_scrape_requires_auth() -> None:
     r = client.post("/scrape", json={"url": "https://example.com"})
     assert r.status_code == 401
 
 
-def test_scrape_returns_job_id():
+def test_scrape_returns_job_id() -> None:
     r = client.post("/scrape", json={"url": "https://example.com"}, headers=AUTH)
     assert r.status_code == 200
     data = r.json()
@@ -113,12 +113,12 @@ def test_scrape_returns_job_id():
     assert data["status"] in ("pending", "running", "complete")
 
 
-def test_job_not_found():
+def test_job_not_found() -> None:
     r = client.get("/scrape/nonexistent-id", headers=AUTH)
     assert r.status_code == 404
 
 
-def test_batch_scrape():
+def test_batch_scrape() -> None:
     r = client.post(
         "/scrape/batch",
         json={"urls": ["https://example.com", "https://example.org"]},
@@ -130,40 +130,40 @@ def test_batch_scrape():
     assert all("job_id" in j for j in data)
 
 
-def test_scrape_wrong_auth():
+def test_scrape_wrong_auth() -> None:
     r = client.post("/scrape", json={"url": "https://example.com"}, headers=WRONG)
     assert r.status_code == 401
 
 
-def test_job_status_requires_auth():
+def test_job_status_requires_auth() -> None:
     r = client.get("/scrape/nonexistent-id")
     assert r.status_code == 401
 
 
-def test_job_status_wrong_auth():
+def test_job_status_wrong_auth() -> None:
     r = client.get("/scrape/nonexistent-id", headers=WRONG)
     assert r.status_code == 401
 
 
-def test_batch_scrape_requires_auth():
+def test_batch_scrape_requires_auth() -> None:
     r = client.post("/scrape/batch", json={"urls": ["https://example.com"]})
     assert r.status_code == 401
 
 
-def test_batch_scrape_wrong_auth():
+def test_batch_scrape_wrong_auth() -> None:
     r = client.post(
         "/scrape/batch", json={"urls": ["https://example.com"]}, headers=WRONG
     )
     assert r.status_code == 401
 
 
-def test_batch_scrape_empty_urls_rejected():
+def test_batch_scrape_empty_urls_rejected() -> None:
     # min_length=1 on BatchScrapeRequest.urls.
     r = client.post("/scrape/batch", json={"urls": []}, headers=AUTH)
     assert r.status_code == 422
 
 
-def test_scrape_max_items_too_large_rejected():
+def test_scrape_max_items_too_large_rejected() -> None:
     # max_items has le=100, so 101 exceeds the limit.
     r = client.post(
         "/scrape",
@@ -173,7 +173,7 @@ def test_scrape_max_items_too_large_rejected():
     assert r.status_code == 422
 
 
-def test_scrape_max_items_zero_rejected():
+def test_scrape_max_items_zero_rejected() -> None:
     # max_items has ge=1, so 0 is below the minimum.
     r = client.post(
         "/scrape",
@@ -183,7 +183,7 @@ def test_scrape_max_items_zero_rejected():
     assert r.status_code == 422
 
 
-def test_scrape_invalid_selector_type_rejected():
+def test_scrape_invalid_selector_type_rejected() -> None:
     # selector_type must be Literal["css", "xpath"].
     r = client.post(
         "/scrape",
@@ -193,7 +193,7 @@ def test_scrape_invalid_selector_type_rejected():
     assert r.status_code == 422
 
 
-def test_batch_scrape_job_ids_are_unique():
+def test_batch_scrape_job_ids_are_unique() -> None:
     r = client.post(
         "/scrape/batch",
         json={"urls": ["https://a.com", "https://b.com", "https://c.com"]},
