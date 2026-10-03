@@ -200,3 +200,8 @@ uv run pytest
 Run every lint and format check with `uvx pre-commit run --all-files`, or install the hooks once with `uvx pre-commit install` so they run on each commit.
 Tests, linting, formatting, strict mypy type checking, and a Docker build run in CI on every push through the shared [discord-dev-standards](https://github.com/Lempki/discord-dev-standards) workflow.
 The coding, prose, and commit conventions are documented in [discord-dev-standards](https://github.com/Lempki/discord-dev-standards).
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
+You may use, change, and share it, as long as every copy keeps the copyright notice and the license text.
