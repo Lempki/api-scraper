@@ -31,7 +31,7 @@ Read it before changing code. When the repositories are cloned side by side, the
 
 ## Template rules
 
-* `src/scraper_api/auth.py`, `src/scraper_api/logging_config.py`, `src/scraper_api/service.py`, `.dockerignore`, `setup.sh`, `setup.bat`, `scripts/bootstrap.py`, `tests/test_bootstrap.py`, `.pre-commit-config.yaml`, `.github/dependabot.yml`, and `tests/test_shared.py` are core files kept identical to api-template.
+* `src/scraper_api/auth.py`, `src/scraper_api/logging_config.py`, `src/scraper_api/service.py`, `.dockerignore`, `setup.sh`, `setup.bat`, `scripts/bootstrap.py`, `tests/test_bootstrap.py`, `run.bat`, `run.sh`, `scripts/run.py`, `tests/test_run.py`, `.pre-commit-config.yaml`, `.github/dependabot.yml`, and `tests/test_shared.py` are core files kept identical to api-template.
 * Check them against the template with `uv run --project ../dev-standards dev-standards template-check --template ../api-template`.
 * Service-specific behavior belongs in files outside that list, such as `main.py`, `config.py`, `jobs.py`, `runner.py`, and the spiders.
 * Keep the version only in pyproject.toml, and keep `SERVICE` in main.py equal to the project name there.

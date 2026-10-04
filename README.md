@@ -126,6 +126,26 @@ cp .env.template .env
 uv run uvicorn scraper_api.main:app --port 8003 --reload
 ```
 
+### Running
+
+After setup has run once, the run script starts the API.
+Double-click `run.bat` on Windows, or run `./run.sh` on macOS and Linux.
+It builds and starts the API in Docker in the background, waits until its health check passes, and shows its status.
+The container then starts again whenever Docker starts.
+
+The script also takes an action, such as `run.bat stop` on Windows or `./run.sh stop` elsewhere:
+
+| Action | What it does |
+|---|---|
+| `start` | Builds and starts everything in Docker and waits until it is ready. It is the default. |
+| `stop` | Stops the containers. They stay stopped until the next start. |
+| `status` | Shows whether each container runs and is healthy. |
+| `logs` | Follows the logs. Press Ctrl+C to stop following. |
+| `update` | Pulls the latest code, rebuilds on fresh base images, and restarts. |
+| `local` | Runs the project in the terminal without Docker. Press Ctrl+C to stop it. |
+
+When a service crashes right after it starts, the script shows the end of its log and stops it, so it does not restart over and over.
+
 ### Docker
 
 Alternatively, you can run the API as a Docker container.
@@ -175,29 +195,32 @@ A host name can resolve to a public address during the check and to a private on
 ```
 api-scraper/
 ├── src/scraper_api/
-│   ├── main.py                 # FastAPI application and route definitions.
-│   ├── config.py               # This service's settings on top of ServiceSettings.
-│   ├── service.py              # Shared settings, secret validation, and the version lookup.
-│   ├── logging_config.py       # JSON logging for every logger, including uvicorn's.
-│   ├── auth.py                 # Bearer token dependency.
-│   ├── models.py               # Pydantic request and response models.
-│   ├── jobs.py                 # Bounded in-memory job store with TTL eviction.
-│   ├── netguard.py             # Check that refuses non-public scrape targets.
-│   ├── runner.py               # Scrapy subprocess launcher with a timeout and a concurrency limit.
+│   ├── main.py               # FastAPI application and route definitions.
+│   ├── config.py             # This service's settings on top of ServiceSettings.
+│   ├── service.py            # Shared settings, secret validation, and the version lookup.
+│   ├── logging_config.py     # JSON logging for every logger, including uvicorn's.
+│   ├── auth.py               # Bearer token dependency.
+│   ├── models.py             # Pydantic request and response models.
+│   ├── jobs.py               # Bounded in-memory job store with TTL eviction.
+│   ├── netguard.py           # Check that refuses non-public scrape targets.
+│   ├── runner.py             # Scrapy subprocess launcher with a timeout and a concurrency limit.
 │   └── spiders/
-│       ├── generic_spider.py   # Reusable Scrapy spider driven by selector config.
-│       ├── guard.py            # Downloader middleware that checks every request's target.
-│       └── run.py              # Subprocess entry point that runs one crawl.
+│       ├── generic_spider.py # Reusable Scrapy spider driven by selector config.
+│       ├── guard.py          # Downloader middleware that checks every request's target.
+│       └── run.py            # Subprocess entry point that runs one crawl.
 ├── tests/
 ├── Dockerfile
 ├── docker-compose.yml
-├── pyproject.toml      # Project metadata, dependencies, and the only copy of the version.
-├── uv.lock             # Locked dependency versions.
-├── ruff.toml           # Lint and format settings on top of the shared baseline.
-├── setup.bat           # Windows setup script.
-├── setup.sh            # macOS and Linux setup script.
-├── scripts/bootstrap.py  # The steps that both setup scripts run.
-└── .env.template       # Template for environment variables.
+├── pyproject.toml            # Project metadata, dependencies, and the only copy of the version.
+├── uv.lock                   # Locked dependency versions.
+├── ruff.toml                 # Lint and format settings on top of the shared baseline.
+├── setup.bat                 # Windows setup script.
+├── setup.sh                  # macOS and Linux setup script.
+├── scripts/bootstrap.py      # The steps that both setup scripts run.
+├── scripts/run.py            # The actions that both run scripts take.
+├── run.bat                   # Windows run script.
+├── run.sh                    # macOS and Linux run script.
+└── .env.template             # Template for environment variables.
 ```
 
 ## Running tests
