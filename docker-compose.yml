@@ -4,6 +4,7 @@ name: api-scraper
 
 services:
   scraper:
+    image: ghcr.io/lempki/api-scraper:latest
     build: .
     ports:
       - "8003:8000"
